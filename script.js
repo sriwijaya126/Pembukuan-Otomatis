@@ -1,112 +1,132 @@
-let tableBody = document.querySelector("#recordTable tbody");
-let form = document.getElementById("entryForm");
-let totalBalanceEl = document.getElementById("totalBalance");
+const firebaseConfig = {
+  apiKey: "AIzaSyBrX-rgREDaji7M2kzWHRCz0qI2SqMR0m4",
+  authDomain: "edit-bareng-pembukuan-otomatis.firebaseapp.com",
+  projectId: "edit-bareng-pembukuan-otomatis",
+  storageBucket: "edit-bareng-pembukuan-otomatis.firebasestorage.app",
+  messagingSenderId: "87099950898",
+  appId: "1:87099950898:web:d5e457d67a9a7c0c36f92b",
+  measurementId: "G-W6VKQPGQ53"
+};
+
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+
+let currentUser = null;
 let data = [];
-let saldo = 0;
 
-form.addEventListener("submit", function (e) {
+function signIn() {
+  const provider = new firebase.auth.GoogleAuthProvider();
+  auth.signInWithPopup(provider);
+}
+
+function signOut() {
+  auth.signOut();
+}
+
+auth.onAuthStateChanged(user => {
+  const userInfo = document.getElementById("userInfo");
+  if (user) {
+    currentUser = user;
+    userInfo.textContent = `Masuk sebagai: ${user.displayName}`;
+    listenToData();
+  } else {
+    currentUser = null;
+    userInfo.textContent = "Belum login.";
+    document.getElementById("recordTable").innerHTML = "";
+  }
+});
+
+function listenToData() {
+  db.collection("pembukuan")
+    .where("uid", "==", currentUser.uid)
+    .orderBy("tanggal")
+    .onSnapshot(snapshot => {
+      data = [];
+      snapshot.forEach(doc => {
+        const item = doc.data();
+        item.id = doc.id;
+        data.push(item);
+      });
+      recalculateSaldo();
+      renderTable();
+    });
+}
+
+document.getElementById("entryForm").addEventListener("submit", async function (e) {
   e.preventDefault();
+  const tanggal = document.getElementById("date").value;
+  const deskripsi = document.getElementById("desc").value;
+  const pemasukan = parseFloat(document.getElementById("income").value) || 0;
+  const pengeluaran = parseFloat(document.getElementById("expense").value) || 0;
 
-  let tanggal = document.getElementById("date").value;
-  let deskripsi = document.getElementById("desc").value;
-  let pemasukan = parseFloat(document.getElementById("income").value) || 0;
-  let pengeluaran = parseFloat(document.getElementById("expense").value) || 0;
-
-  let entry = {
+  await db.collection("pembukuan").add({
+    uid: currentUser.uid,
     tanggal,
     deskripsi,
     pemasukan,
-    pengeluaran,
-    saldo: 0 // sementara
-  };
-  data.push(entry);
-  recalculateSaldo();
-  saveToLocal();
-  renderTable();
+    pengeluaran
+  });
 
-  form.reset();
+  this.reset();
 });
 
-// 🧠 Hitung ulang saldo setiap kali data berubah
 function recalculateSaldo() {
-  let total = 0;
-  data.forEach((item) => {
-    total += (item.pemasukan || 0) - (item.pengeluaran || 0);
-    item.saldo = total;
+  let saldo = 0;
+  data.forEach(item => {
+    saldo += (item.pemasukan || 0) - (item.pengeluaran || 0);
+    item.saldo = saldo;
   });
-  saldo = total;
-  totalBalanceEl.textContent = `Rp ${saldo.toLocaleString("id-ID")}`;
+  document.getElementById("totalBalance").textContent = `Rp ${saldo.toLocaleString("id-ID")}`;
 }
 
-function saveToLocal() {
-  localStorage.setItem("pembukuanData", JSON.stringify(data));
-  localStorage.setItem("totalSaldo", saldo);
-}
+function renderTable(filteredData = data) {
+  const tbody = document.getElementById("recordTable");
+  tbody.innerHTML = "";
 
-function loadFromLocal() {
-  const savedData = localStorage.getItem("pembukuanData");
-  const savedSaldo = localStorage.getItem("totalSaldo");
-
-  if (savedData) {
-    data = JSON.parse(savedData);
-    saldo = parseFloat(savedSaldo) || 0;
-    recalculateSaldo();
-    renderTable();
-  }
-}
-
-// 🔄 Render ulang semua tabel berdasarkan array `data`
-function renderTable(dataArray = data) {
-  tableBody.innerHTML = "";
-  dataArray.forEach((entry, index) => {
-    const row = document.createElement("tr");
-
-    row.innerHTML = `
-      <td><input type="date" value="${entry.tanggal}" data-index="${index}" data-field="tanggal"></td>
-      <td><input type="text" value="${entry.deskripsi}" data-index="${index}" data-field="deskripsi"></td>
-      <td><input type="number" value="${entry.pemasukan || ""}" data-index="${index}" data-field="pemasukan"></td>
-      <td><input type="number" value="${entry.pengeluaran || ""}" data-index="${index}" data-field="pengeluaran"></td>
-      <td>Rp ${entry.saldo.toLocaleString("id-ID")}</td>
-      <td><button data-index="${index}" class="delete-btn">❌</button></td>
+  filteredData.forEach((item, index) => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td><input type="date" value="${item.tanggal}" data-id="${item.id}" data-field="tanggal"></td>
+      <td><input type="text" value="${item.deskripsi}" data-id="${item.id}" data-field="deskripsi"></td>
+      <td><input type="number" value="${item.pemasukan}" data-id="${item.id}" data-field="pemasukan"></td>
+      <td><input type="number" value="${item.pengeluaran}" data-id="${item.id}" data-field="pengeluaran"></td>
+      <td>Rp ${item.saldo.toLocaleString("id-ID")}</td>
+      <td><button onclick="deleteEntry('${item.id}')">❌</button></td>
     `;
-
-    row.querySelector(".delete-btn").addEventListener("click", () => {
-      data.splice(index, 1);
-      recalculateSaldo();
-      saveToLocal();
-      renderTable();
-    });
-
-    tableBody.appendChild(row);
+    tbody.appendChild(tr);
   });
 
-  // Tambahkan event listener untuk semua input setelah render
-  const inputs = tableBody.querySelectorAll("input");
-  inputs.forEach(input => {
+  document.querySelectorAll("#recordTable input").forEach(input => {
     input.addEventListener("change", handleEdit);
   });
 }
 
-// ✏️ Saat isi input diubah → update `data`, hitung ulang
-function handleEdit(e) {
+async function handleEdit(e) {
   const input = e.target;
-  const index = parseInt(input.dataset.index);
+  const id = input.dataset.id;
   const field = input.dataset.field;
-  const value = input.value;
-
-  if (field === "pemasukan" || field === "pengeluaran") {
-    data[index][field] = parseFloat(value) || 0;
-  } else {
-    data[index][field] = value;
-  }
-
-  recalculateSaldo();
-  saveToLocal();
-  renderTable();
+  let value = input.value;
+  if (field === "pemasukan" || field === "pengeluaran") value = parseFloat(value) || 0;
+  await db.collection("pembukuan").doc(id).update({ [field]: value });
 }
 
-// EXPORT EXCEL
-document.getElementById("exportBtn").addEventListener("click", function () {
+async function deleteEntry(id) {
+  await db.collection("pembukuan").doc(id).delete();
+}
+
+document.getElementById("applyFilter").addEventListener("click", () => {
+  const start = document.getElementById("filterStart").value;
+  const end = document.getElementById("filterEnd").value;
+  if (!start || !end) return renderTable();
+
+  const filtered = data.filter(e => e.tanggal >= start && e.tanggal <= end);
+  renderTable(filtered);
+});
+
+document.getElementById("clearFilter").addEventListener("click", () => renderTable());
+
+document.getElementById("exportBtn").addEventListener("click", () => {
   const wb = XLSX.utils.book_new();
   const wsData = [
     ["Tanggal", "Deskripsi", "Pemasukan", "Pengeluaran", "Saldo"],
@@ -117,48 +137,23 @@ document.getElementById("exportBtn").addEventListener("click", function () {
   XLSX.writeFile(wb, "pembukuan.xlsx");
 });
 
-// RESET ALL DATA
-document.getElementById("resetBtn")?.addEventListener("click", function () {
-  if (confirm("Yakin ingin menghapus semua data?")) {
-    localStorage.clear();
-    data = [];
-    saldo = 0;
-    tableBody.innerHTML = "";
-    totalBalanceEl.textContent = "Rp 0";
-  }
-});
-
-// FILTER BY DATE
-document.getElementById("applyFilter").addEventListener("click", () => {
-  const start = document.getElementById("filterStart").value;
-  const end = document.getElementById("filterEnd").value;
-
-  if (!start || !end) return renderTable();
-
-  const filtered = data.filter(e => e.tanggal >= start && e.tanggal <= end);
-  renderTable(filtered);
-});
-
-document.getElementById("clearFilter").addEventListener("click", () => {
-  renderTable();
-});
-
-
-// EXPORT PDF
-document.getElementById("exportPDFBtn").addEventListener("click", async () => {
+document.getElementById("exportPDFBtn").addEventListener("click", () => {
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF();
-
   doc.text("Laporan Pembukuan", 10, 10);
   let y = 20;
   data.forEach((item, i) => {
     doc.text(`${i + 1}. ${item.tanggal} | ${item.deskripsi} | Rp ${item.pemasukan || 0} | Rp ${item.pengeluaran || 0} | Rp ${item.saldo}`, 10, y);
     y += 10;
   });
-
   doc.save("pembukuan.pdf");
 });
 
-
-// Load saat pertama buka
-loadFromLocal();
+document.getElementById("resetBtn").addEventListener("click", async () => {
+  if (confirm("Hapus semua data?")) {
+    const snapshot = await db.collection("pembukuan").where("uid", "==", currentUser.uid).get();
+    const batch = db.batch();
+    snapshot.forEach(doc => batch.delete(doc.ref));
+    await batch.commit();
+  }
+});
