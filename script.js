@@ -105,7 +105,7 @@ function handleEdit(e) {
   renderTable();
 }
 
-// Export Excel
+// EXPORT EXCEL
 document.getElementById("exportBtn").addEventListener("click", function () {
   const wb = XLSX.utils.book_new();
   const wsData = [
@@ -117,7 +117,7 @@ document.getElementById("exportBtn").addEventListener("click", function () {
   XLSX.writeFile(wb, "pembukuan.xlsx");
 });
 
-// Reset
+// RESET ALL DATA
 document.getElementById("resetBtn")?.addEventListener("click", function () {
   if (confirm("Yakin ingin menghapus semua data?")) {
     localStorage.clear();
@@ -128,6 +128,7 @@ document.getElementById("resetBtn")?.addEventListener("click", function () {
   }
 });
 
+// FILTER BY DATE
 document.getElementById("applyFilter").addEventListener("click", () => {
   const start = document.getElementById("filterStart").value;
   const end = document.getElementById("filterEnd").value;
@@ -140,6 +141,22 @@ document.getElementById("applyFilter").addEventListener("click", () => {
 
 document.getElementById("clearFilter").addEventListener("click", () => {
   renderTable();
+});
+
+
+// EXPORT PDF
+document.getElementById("exportPDFBtn").addEventListener("click", async () => {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+
+  doc.text("Laporan Pembukuan", 10, 10);
+  let y = 20;
+  data.forEach((item, i) => {
+    doc.text(`${i + 1}. ${item.tanggal} | ${item.deskripsi} | Rp ${item.pemasukan || 0} | Rp ${item.pengeluaran || 0} | Rp ${item.saldo}`, 10, y);
+    y += 10;
+  });
+
+  doc.save("pembukuan.pdf");
 });
 
 
