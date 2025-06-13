@@ -1,11 +1,11 @@
-const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_PROJECT_ID.appspot.com",
-  messagingSenderId: "YOUR_SENDER_ID",
-  appId: "YOUR_APP_ID"
-};
+  const firebaseConfig = {
+    apiKey: "AIzaSyBCHzv-tL9Z-kpqH0QrG-VJei-yjlmNfhA",
+    authDomain: "pembukuan-firebase.firebaseapp.com",
+    projectId: "pembukuan-firebase",
+    storageBucket: "pembukuan-firebase.firebasestorage.app",
+    messagingSenderId: "990859921680",
+    appId: "1:990859921680:web:79ad10069c6f98c5593d95"
+  };
 
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
