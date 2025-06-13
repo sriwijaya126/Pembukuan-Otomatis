@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>Pembukuan Otomatis</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <h1>Pembukuan Otomatis</h1>
+
+  <form id="entryForm">
+    <input type="date" id="date" required>
+    <input type="text" id="desc" placeholder="Deskripsi" required>
+    <input type="number" id="income" placeholder="Pemasukan (Rp)">
+    <input type="number" id="expense" placeholder="Pengeluaran (Rp)">
+    <button type="submit">Tambah</button>
+  </form>
+
+  <table id="recordTable">
+    <thead>
+      <tr>
+        <th>Tanggal</th>
+        <th>Deskripsi</th>
+        <th>Pemasukan</th>
+        <th>Pengeluaran</th>
+        <th>Saldo</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <div id="totalBox">
+    Total Saldo: <span id="totalBalance">Rp 0</span>
+  </div>
+
+  <button id="exportBtn">Export ke Excel</button>
+
+  <script src="xlsx.full.min.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
