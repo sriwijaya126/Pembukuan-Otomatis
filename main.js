@@ -17,7 +17,7 @@ let unsubscribe = null;
 const loginBtn = document.getElementById("loginBtn");
 const logoutBtn = document.getElementById("logoutBtn");
 const entryForm = document.getElementById("entryForm");
-const table = document.getElementById("recordTable");
+document.getElementById("mainTable")
 const totalBalance = document.getElementById("totalBalance");
 const userInfo = document.getElementById("userInfo");
 const title = document.getElementById("title");
