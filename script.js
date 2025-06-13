@@ -17,6 +17,7 @@ function updateTable(entry) {
   tableBody.appendChild(row);
 }
 
+// EXPORT
 document.getElementById("exportBtn").addEventListener("click", function () {
   const wb = XLSX.utils.book_new();
   const wsData = [
@@ -28,11 +29,13 @@ document.getElementById("exportBtn").addEventListener("click", function () {
   XLSX.writeFile(wb, "pembukuan.xlsx");
 });
 
+// LOCALSAVE
 function saveToLocal() {
   localStorage.setItem("pembukuanData", JSON.stringify(data));
   localStorage.setItem("totalSaldo", saldo);
 }
 
+// LOAD LOCAL DATA
 function loadFromLocal() {
   const savedData = localStorage.getItem("pembukuanData");
   const savedSaldo = localStorage.getItem("totalSaldo");
@@ -45,6 +48,7 @@ function loadFromLocal() {
   }
 }
 
+// ADD DATA
 form.addEventListener("submit", function (e) {
   e.preventDefault();
 
@@ -69,5 +73,18 @@ form.addEventListener("submit", function (e) {
 
   form.reset();
 });
+
+// RESET
+
+document.getElementById("resetBtn").addEventListener("click", function () {
+  if (confirm("Yakin ingin menghapus semua data?")) {
+    localStorage.clear();
+    data = [];
+    saldo = 0;
+    tableBody.innerHTML = "";
+    totalBalanceEl.textContent = "Rp 0";
+  }
+});
+
 
 loadFromLocal();
