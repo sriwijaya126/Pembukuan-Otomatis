@@ -4,20 +4,100 @@ let totalBalanceEl = document.getElementById("totalBalance");
 let data = [];
 let saldo = 0;
 
+form.addEventListener("submit", function (e) {
+  e.preventDefault();
 
-function updateTable(entry) {
-  let row = document.createElement("tr");
-  row.innerHTML = `
-    <td>${entry.tanggal}</td>
-    <td>${entry.deskripsi}</td>
-    <td>${entry.pemasukan ? `Rp ${entry.pemasukan.toLocaleString("id-ID")}` : ""}</td>
-    <td>${entry.pengeluaran ? `Rp ${entry.pengeluaran.toLocaleString("id-ID")}` : ""}</td>
-    <td>Rp ${entry.saldo.toLocaleString("id-ID")}</td>
-  `;
-  tableBody.appendChild(row);
+  let tanggal = document.getElementById("date").value;
+  let deskripsi = document.getElementById("desc").value;
+  let pemasukan = parseFloat(document.getElementById("income").value) || 0;
+  let pengeluaran = parseFloat(document.getElementById("expense").value) || 0;
+
+  let entry = {
+    tanggal,
+    deskripsi,
+    pemasukan,
+    pengeluaran,
+    saldo: 0 // sementara
+  };
+  data.push(entry);
+  recalculateSaldo();
+  saveToLocal();
+  renderTable();
+
+  form.reset();
+});
+
+// 🧠 Hitung ulang saldo setiap kali data berubah
+function recalculateSaldo() {
+  let total = 0;
+  data.forEach((item) => {
+    total += (item.pemasukan || 0) - (item.pengeluaran || 0);
+    item.saldo = total;
+  });
+  saldo = total;
+  totalBalanceEl.textContent = `Rp ${saldo.toLocaleString("id-ID")}`;
 }
 
-// EXPORT
+function saveToLocal() {
+  localStorage.setItem("pembukuanData", JSON.stringify(data));
+  localStorage.setItem("totalSaldo", saldo);
+}
+
+function loadFromLocal() {
+  const savedData = localStorage.getItem("pembukuanData");
+  const savedSaldo = localStorage.getItem("totalSaldo");
+
+  if (savedData) {
+    data = JSON.parse(savedData);
+    saldo = parseFloat(savedSaldo) || 0;
+    recalculateSaldo();
+    renderTable();
+  }
+}
+
+// 🔄 Render ulang semua tabel berdasarkan array `data`
+function renderTable() {
+  tableBody.innerHTML = "";
+  data.forEach((entry, index) => {
+    const row = document.createElement("tr");
+
+    row.innerHTML = `
+      <td><input type="date" value="${entry.tanggal}" data-index="${index}" data-field="tanggal"></td>
+      <td><input type="text" value="${entry.deskripsi}" data-index="${index}" data-field="deskripsi"></td>
+      <td><input type="number" value="${entry.pemasukan || ""}" data-index="${index}" data-field="pemasukan"></td>
+      <td><input type="number" value="${entry.pengeluaran || ""}" data-index="${index}" data-field="pengeluaran"></td>
+      <td>Rp ${entry.saldo.toLocaleString("id-ID")}</td>
+    `;
+
+    tableBody.appendChild(row);
+  });
+
+  // Tambahkan event listener untuk semua input setelah render
+  const inputs = tableBody.querySelectorAll("input");
+  inputs.forEach(input => {
+    input.addEventListener("change", handleEdit);
+  });
+}
+
+// ✏️ Saat isi input diubah → update `data`, hitung ulang
+function handleEdit(e) {
+  const input = e.target;
+  const index = parseInt(input.dataset.index);
+  const field = input.dataset.field;
+  const value = input.value;
+
+  if (field === "pemasukan" || field === "pengeluaran") {
+    data[index][field] = parseFloat(value) || 0;
+  } else {
+    data[index][field] = value;
+  }
+
+  recalculateSaldo();
+  saveToLocal();
+  renderTable();
+}
+
+// Export Excel
 document.getElementById("exportBtn").addEventListener("click", function () {
   const wb = XLSX.utils.book_new();
   const wsData = [
@@ -29,54 +109,8 @@ document.getElementById("exportBtn").addEventListener("click", function () {
   XLSX.writeFile(wb, "pembukuan.xlsx");
 });
 
-// LOCALSAVE
-function saveToLocal() {
-  localStorage.setItem("pembukuanData", JSON.stringify(data));
-  localStorage.setItem("totalSaldo", saldo);
-}
-
-// LOAD LOCAL DATA
-function loadFromLocal() {
-  const savedData = localStorage.getItem("pembukuanData");
-  const savedSaldo = localStorage.getItem("totalSaldo");
-
-  if (savedData) {
-    data = JSON.parse(savedData);
-    saldo = parseFloat(savedSaldo) || 0;
-    totalBalanceEl.textContent = `Rp ${saldo.toLocaleString("id-ID")}`;
-    data.forEach(updateTable);
-  }
-}
-
-// ADD DATA
-form.addEventListener("submit", function (e) {
-  e.preventDefault();
-
-  let tanggal = document.getElementById("date").value;
-  let deskripsi = document.getElementById("desc").value;
-  let pemasukan = parseFloat(document.getElementById("income").value) || 0;
-  let pengeluaran = parseFloat(document.getElementById("expense").value) || 0;
-
-  saldo += pemasukan - pengeluaran;
-  totalBalanceEl.textContent = `Rp ${saldo.toLocaleString("id-ID")}`;
-
-  let entry = {
-    tanggal, 
-    deskripsi,
-    pemasukan,
-    pengeluaran,
-    saldo
-  };
-  data.push(entry);
-  saveToLocal();
-  updateTable(entry);
-
-  form.reset();
-});
-
-// RESET
-
-document.getElementById("resetBtn").addEventListener("click", function () {
+// Reset
+document.getElementById("resetBtn")?.addEventListener("click", function () {
   if (confirm("Yakin ingin menghapus semua data?")) {
     localStorage.clear();
     data = [];
@@ -86,5 +120,5 @@ document.getElementById("resetBtn").addEventListener("click", function () {
   }
 });
 
-
+// Load saat pertama buka
 loadFromLocal();
