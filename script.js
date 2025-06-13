@@ -4,29 +4,6 @@ let totalBalanceEl = document.getElementById("totalBalance");
 let data = [];
 let saldo = 0;
 
-form.addEventListener("submit", function (e) {
-  e.preventDefault();
-
-  let tanggal = document.getElementById("date").value;
-  let deskripsi = document.getElementById("desc").value;
-  let pemasukan = parseFloat(document.getElementById("income").value) || 0;
-  let pengeluaran = parseFloat(document.getElementById("expense").value) || 0;
-
-  saldo += pemasukan - pengeluaran;
-  totalBalanceEl.textContent = `Rp ${saldo.toLocaleString("id-ID")}`;
-
-  let entry = {
-    tanggal,
-    deskripsi,
-    pemasukan,
-    pengeluaran,
-    saldo
-  };
-  data.push(entry);
-  updateTable(entry);
-
-  form.reset();
-});
 
 function updateTable(entry) {
   let row = document.createElement("tr");
@@ -49,4 +26,46 @@ document.getElementById("exportBtn").addEventListener("click", function () {
   const ws = XLSX.utils.aoa_to_sheet(wsData);
   XLSX.utils.book_append_sheet(wb, ws, "Pembukuan");
   XLSX.writeFile(wb, "pembukuan.xlsx");
+});
+
+function saveToLocal() {
+  localStorage.setItem("pembukuanData", JSON.stringify(data));
+  localStorage.setItem("totalSaldo", saldo);
+}
+
+function loadFromLocal() {
+  const savedData = localStorage.getItem("pembukuanData");
+  const savedSaldo = localStorage.getItem("totalSaldo");
+
+  if (savedData) {
+    data = JSON.parse(savedData);
+    saldo = parseFloat(savedSaldo) || 0;
+    totalBalanceEl.textContent = `Rp ${saldo.toLocaleString("id-ID")}`;
+    data.forEach(updateTable);
+  }
+}
+
+form.addEventListener("submit", function (e) {
+  e.preventDefault();
+
+  let tanggal = document.getElementById("date").value;
+  let deskripsi = document.getElementById("desc").value;
+  let pemasukan = parseFloat(document.getElementById("income").value) || 0;
+  let pengeluaran = parseFloat(document.getElementById("expense").value) || 0;
+
+  saldo += pemasukan - pengeluaran;
+  totalBalanceEl.textContent = `Rp ${saldo.toLocaleString("id-ID")}`;
+
+  let entry = {
+    tanggal, 
+    deskripsi,
+    pemasukan,
+    pengeluaran,
+    saldo
+  };
+  data.push(entry);
+  saveToLocal();
+  updateTable(entry);
+
+  form.reset();
 });
