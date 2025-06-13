@@ -4,8 +4,8 @@ const firebaseConfig = {
   projectId: "edit-bareng-pembukuan-otomatis",
   storageBucket: "edit-bareng-pembukuan-otomatis.firebasestorage.app",
   messagingSenderId: "87099950898",
-  appId: "1:87099950898:web:d5e457d67a9a7c0c36f92b",
-  measurementId: "G-W6VKQPGQ53"
+  appId: "1:87099950898:web:ab7dbcbf57e794d836f92b",
+  measurementId: "G-7G9SK2KGRW"
 };
 
 firebase.initializeApp(firebaseConfig);
