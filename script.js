@@ -56,9 +56,9 @@ function loadFromLocal() {
 }
 
 // 🔄 Render ulang semua tabel berdasarkan array `data`
-function renderTable() {
+function renderTable(dataArray = data) {
   tableBody.innerHTML = "";
-  data.forEach((entry, index) => {
+  dataArray.forEach((entry, index) => {
     const row = document.createElement("tr");
 
     row.innerHTML = `
@@ -67,7 +67,15 @@ function renderTable() {
       <td><input type="number" value="${entry.pemasukan || ""}" data-index="${index}" data-field="pemasukan"></td>
       <td><input type="number" value="${entry.pengeluaran || ""}" data-index="${index}" data-field="pengeluaran"></td>
       <td>Rp ${entry.saldo.toLocaleString("id-ID")}</td>
+      <td><button data-index="${index}" class="delete-btn">❌</button></td>
     `;
+
+    row.querySelector(".delete-btn").addEventListener("click", () => {
+      data.splice(index, 1);
+      recalculateSaldo();
+      saveToLocal();
+      renderTable();
+    });
 
     tableBody.appendChild(row);
   });
@@ -119,6 +127,21 @@ document.getElementById("resetBtn")?.addEventListener("click", function () {
     totalBalanceEl.textContent = "Rp 0";
   }
 });
+
+document.getElementById("applyFilter").addEventListener("click", () => {
+  const start = document.getElementById("filterStart").value;
+  const end = document.getElementById("filterEnd").value;
+
+  if (!start || !end) return renderTable();
+
+  const filtered = data.filter(e => e.tanggal >= start && e.tanggal <= end);
+  renderTable(filtered);
+});
+
+document.getElementById("clearFilter").addEventListener("click", () => {
+  renderTable();
+});
+
 
 // Load saat pertama buka
 loadFromLocal();
